@@ -37,9 +37,12 @@ def delete_model_files_except_one(files, keep_model= 'model_epoch_108.pt'):
     Args:
         Files: files iterator (output of get_run_files).
     """
+    api=wandb.Api()
     names = [f.name for f in list(files)]
     saved_model_fnames = fnmatch.filter(names, "model_epoch_*.pt")
-    assert keep_model in saved_model_fnames
+    if keep_model not in saved_model_fnames:
+        print("model file not found. Skipping this delete")
+        return
     saved_model_fnames.remove(keep_model)
     delete_files = saved_model_fnames
     for f in files:
@@ -60,13 +63,14 @@ def get_project_total_storage(entity, project):
 
 def delete_model_files_except_one_whole_project(entity, project, keep_model= 'model_epoch_108.pt'):
     """ Careful - deleting lots of files  """
+    api=wandb.Api()
     project_runs = api.runs(os.path.join(entity, project), filters={})
     for run in project_runs:
-        files, total_size = wandb_utils.get_run_files(run, print_sz=0)
+        files, total_size = get_run_files(run, print_sz=0)
         print(f"Before delete: {total_size/1024**3:.3f} GB {run.name}")
-        wandb_utils.delete_model_files_except_one(files, keep_model=keep_model)
+        delete_model_files_except_one(files, keep_model=keep_model)
 
-        files, total_size = wandb_utils.get_run_files(run, print_sz=0)
+        files, total_size = get_run_files(run, print_sz=0)
         print(f"After delete: {total_size/1024**3:.3f} GB {run.name}")
         print("\n")
 
